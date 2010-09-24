@@ -26,6 +26,7 @@ import sys
 import operator
 import functools
 import re
+import errno
 import subprocess
 
 
@@ -37,18 +38,11 @@ symbol_rgx = re.compile(r"\\[A-Za-z@]+|\\[^A-Za-z@]")
 public_symbol_rgx = re.compile(r"\\[A-Za-z]+|\\[^A-Za-z]")
 
 
-def main():
-    known_symbols = get_known_symbols()
-    table_symbols = get_table_symbols()
-    old_symbols = table_symbols & known_symbols
-    new_symbols = table_symbols - known_symbols
-    write_symbols("old-symbols.lst", old_symbols)
-    write_symbols("new-symbols.lst", new_symbols)
-
-
 def get_known_symbols():
-    return functools.reduce(operator.or_, map(list_public_symbols, files),
-                            read_symbols("known-symbols.lst"))
+    known = read_symbols("known-symbols.lst")
+    public = union(map(list_public_symbols, files))
+    dangerous = read_symbols("dangerous-symbols.lst")
+    return (known | public) - dangerous
 
 
 def get_table_symbols():
@@ -66,8 +60,14 @@ def list_public_symbols(filename):
 
 
 def read_symbols(filename):
-    with open(filename, "rt", encoding="ASCII") as stream:
-        return frozenset(symbol.rstrip("\n") for symbol in stream)
+    try:
+        with open(filename, "rt", encoding="ASCII") as stream:
+            return frozenset(symbol.rstrip("\n") for symbol in stream)
+    except IOError as exc:
+        if exc.errno == errno.ENOENT:
+            return frozenset()
+        else:
+            raise
 
 
 def write_symbols(filename, symbols):
@@ -83,6 +83,19 @@ def kpsewhich(name):
         return stdout.decode(sys.getfilesystemencoding()).rstrip("\n")
     else:
         return None
+
+
+def union(iterable):
+    return functools.reduce(operator.or_, iterable)
+
+
+def main():
+    known_symbols = get_known_symbols()
+    table_symbols = get_table_symbols()
+    old_symbols = table_symbols & known_symbols
+    new_symbols = table_symbols - known_symbols
+    write_symbols("old-symbols.lst", old_symbols)
+    write_symbols("new-symbols.lst", new_symbols)
 
 
 if __name__ == "__main__":

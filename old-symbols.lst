@@ -79,7 +79,6 @@
 \circledcirc
 \circleddash
 \clubsuit
-\coloneq
 \complement
 \cong
 \coprod
@@ -111,7 +110,6 @@
 \downharpoonright
 \ell
 \eqcirc
-\eqcolon
 \eqsim
 \eqslantgtr
 \eqslantless
@@ -248,7 +246,6 @@
 \overbracket
 \overleftarrow
 \overleftrightarrow
-\overline
 \parallel
 \partial
 \perp
@@ -288,7 +285,6 @@
 \sharp
 \sim
 \simeq
-\slash
 \smallsetminus
 \smile
 \spadesuit
