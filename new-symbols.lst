@@ -255,6 +255,7 @@
 \closedvarcup
 \closedvarcupsmashprod
 \closure
+\coloneq
 \comma
 \commaminus
 \concavediamond
@@ -350,6 +351,7 @@
 \enclosetriangle
 \enleadertwodots
 \eparsl
+\eqcolon
 \eqdef
 \eqdot
 \eqeq
@@ -567,7 +569,9 @@
 \mapsfrom
 \mapsup
 \mathcolon
+\matheth
 \mathratio
+\mathslash
 \mbfA
 \mbfAlpha
 \mbfB

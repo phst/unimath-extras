@@ -8,7 +8,7 @@
 \plus
 \comma
 \period
-\slash
+\mathslash
 \mathcolon
 \semicolon
 \less
@@ -28,6 +28,7 @@
 \pm
 \cdotp
 \times
+\matheth
 \div
 \Zbar
 \grave
@@ -134,7 +135,6 @@
 \backtrprime
 \caretinsert
 \Exclam
-\overline
 \tieconcat
 \hyphenbullet
 \fracslash
