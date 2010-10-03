@@ -10,7 +10,7 @@
 % 2009/09/24 or later.
 
 \RequirePackage{expl3}
-\ProvidesExplPackage{unimath-fixes}{2010/10/03}{0.1}%
+\ProvidesExplPackage{unimath-fixes}{2010/10/04}{0.1}%
   {Fixes several packages for use with OpenType math}
 
 % LuaTeX doesn't use fontdimens
@@ -40,12 +40,12 @@
     \restore@math@cr
     \default@tag
     \skip_set:Nn \tex_baselineskip:D {
-      % numerator shift + denominator shift
-      \umfix_fontdimen:n{42} + \umfix_fontdimen:n{44}
+      % stack top shift + stack bottom shift
+      \umfix_fontdimen:n{32} + \umfix_fontdimen:n{34}
     }
     \skip_set:Nn \tex_lineskip:D {
-      % numerator gap + fraction rule width + denominator gap
-      \umfix_fontdimen:n{46} + \umfix_fontdimen:n{48} + \umfix_fontdimen:n{49}
+      % minimum stack gap
+      \umfix_fontdimen:n{36}
     }
     \skip_set:Nn \tex_lineskiplimit:D { \tex_lineskip:D }
     \ialign
