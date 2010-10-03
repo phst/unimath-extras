@@ -1,0 +1,33 @@
+\documentclass{minimal}
+
+\usepackage{expl3}
+
+\newwrite\myoutstream
+
+\begin{document}
+
+$a$
+
+\immediate\openout\myoutstream=\jobname.lst
+
+\ExplSyntaxOn
+\prg_stepwise_inline:nnnn{1}{1}{22}{
+  \immediate\write\myoutstream{
+    #1;~
+    \the\fontdimen#1\textfont2;~
+    \ifnum#1<14~\the\fontdimen#1\textfont3\fi;~
+    \the\fontdimen#1\scriptfont2;~
+    \ifnum#1<14~\the\fontdimen#1\scriptfont3\fi;~
+    \the\fontdimen#1\scriptscriptfont2;~
+    \ifnum#1<14~\the\fontdimen#1\scriptscriptfont3\fi
+  }
+}
+\ExplSyntaxOff
+
+\immediate\closeout\myoutstream
+
+\end{document}
+
+% Local Variables:
+% TeX-engine: default
+% End:

@@ -1,0 +1,90 @@
+% Copyright (C) 2010 by Philipp Stephani <st_philipp@yahoo.de>
+%
+% This file may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at your
+% option) any later version.  The latest version of this license is in:
+%
+%    http://www.latex-project.org/lppl.txt
+%
+% and version 1.3c or later is part of all distributions of LaTeX version
+% 2009/09/24 or later.
+
+\RequirePackage{expl3}
+\ProvidesExplPackage{unimath-fixes}{2010/10/03}{0.1}%
+  {Fixes several packages for use with OpenType math}
+
+% LuaTeX doesn't use fontdimens
+\RequirePackage{ifxetex}
+\RequireXeTeX
+
+\RequirePackage{etoolbox}
+\RequirePackage{unicode-math}
+
+\msg_new:nnn { unimath-fixes } { patch-fail } { Could~ not~ patch~ command~ #1 }
+
+\cs_new_protected_nopar:Nn \umfix_patch:Nnn {
+  \patchcmd { #1 } { #2 } { #3 } { } {
+    \msg_error:nnx { unimath-fixes } { patch-fail } { \token_to_str:N #1 }
+  }
+}
+  
+\cs_new_nopar:Nn \umfix_fontdimen:n {
+  \tex_fontdimen:D \intexpr_eval:n { #1 } \tex_scriptfont:D \c_two
+}
+
+\@ifpackageloaded {amsmath} {
+  \RenewDocumentEnvironment {subarray} {m} {
+    \tex_vcenter:D
+    \c_group_begin_token
+    \Let@
+    \restore@math@cr
+    \default@tag
+    \skip_set:Nn \tex_baselineskip:D {
+      % numerator shift + denominator shift
+      \umfix_fontdimen:n{42} + \umfix_fontdimen:n{44}
+    }
+    \skip_set:Nn \tex_lineskip:D {
+      % numerator gap + fraction rule width + denominator gap
+      \umfix_fontdimen:n{46} + \umfix_fontdimen:n{48} + \umfix_fontdimen:n{49}
+    }
+    \skip_set:Nn \tex_lineskiplimit:D { \tex_lineskip:D }
+    \ialign
+    \c_group_begin_token
+    \tl_if_eq:nnT {c} {#1} { \tex_hfil:D }
+    \c_math_shift_token
+    \m@th
+    \tex_scriptstyle:D
+    \c_parameter_token \c_parameter_token
+    \c_math_shift_token
+    \tex_hfil:D
+    \tex_crcr:D
+  } {
+    \tex_crcr:D
+    \c_group_end_token
+    \c_group_end_token
+  }
+  % \umfix_patch:Nnn \subarray { \fontdimen 10 } { \fontdimen 42 }
+  % \umfix_patch:Nnn \subarray { \fontdimen 12 } { \fontdimen 44 }
+  % \umfix_patch:Nnn \subarray { \fontdimen  8 } { \fontdimen 48 }
+} {}
+
+% \@ifpackageloaded {blkarray} {
+%   \umfix_patch:Nnn \BA@place { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \BA@place { \fontdimen 22 } { \fontdimen 15 }
+% } {}
+
+% \@ifpackageloaded {bytefield} {
+%   \umfix_patch:Nnn \store@rcurly { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \store@rcurly { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \store@rcurly { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \store@lcurly { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \store@lcurly { \fontdimen 22 } { \fontdimen 15 }
+%   \umfix_patch:Nnn \store@lcurly { \fontdimen 22 } { \fontdimen 15 }
+% }
+
+\@ifpackageloaded {mathtools} {
+  \umfix_patch:Nnn \MT_cramped_internal:Nn { \fontdimen 8 } { \fontdimen 48 }
+  \umfix_patch:Nnn \MT_cramped_internal:Nn { \fontdimen 8 } { \fontdimen 48 }
+}
+
+\endinput

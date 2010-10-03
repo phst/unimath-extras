@@ -2,3 +2,6 @@
 *~
 auto/
 *.log
+*.pdf
+*.synctex.gz
+*.aux
