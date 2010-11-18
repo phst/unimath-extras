@@ -1,0 +1,144 @@
+Index: source/texk/web2c/luatexdir/tex/commands.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/commands.w	(revision 3950)
++++ source/texk/web2c/luatexdir/tex/commands.w	(working copy)
+@@ -364,6 +364,9 @@
+     primitive_luatex("Umathaccent", math_accent_cmd, 2, 0);
+     primitive_luatex("Umathbotaccent", math_accent_cmd, 3, 0);
+     primitive_luatex("Umathaccents", math_accent_cmd, 4, 0);
++    primitive_luatex("Umathfixedtopaccent", math_accent_cmd, 5, 0);
++    primitive_luatex("Umathfixedbotaccent", math_accent_cmd, 6, 0);
++    primitive_luatex("Umathfixedaccents", math_accent_cmd, 7, 0);
+     primitive_tex("mathchar", math_char_num_cmd, 0, 0);
+     primitive_omega("omathchar", math_char_num_cmd, 1, 0);
+     primitive_luatex("Umathchar", math_char_num_cmd, 2, 0);
+Index: source/texk/web2c/luatexdir/tex/texmath.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/texmath.w	(revision 3950)
++++ source/texk/web2c/luatexdir/tex/texmath.w	(working copy)
+@@ -715,6 +715,8 @@
+         }
+         break;
+     case accent_noad:
++       switch (subtype(p)) {
++       case 0:
+         if (accent_chr(p) != null) {
+             if (bot_accent_chr(p) != null) {
+                 tprint_esc("Umathaccents");
+@@ -729,6 +731,23 @@
+             print_fam_and_char(bot_accent_chr(p));
+         }
+         break;
++       case 1:
++        if (accent_chr(p) != null) {
++            if (bot_accent_chr(p) != null) {
++                tprint_esc("Umathfixedaccents");
++                print_fam_and_char(accent_chr(p));
++                print_fam_and_char(bot_accent_chr(p));
++            } else {
++                tprint_esc("Umathfixedtopaccent");
++                print_fam_and_char(accent_chr(p));
++            }
++        } else {
++            tprint_esc("Umathfixedbotaccent");
++            print_fam_and_char(bot_accent_chr(p));
++        }
++        break;
++       }
++       break;
+     }
+     print_subsidiary_data(nucleus(p), '.');
+     print_subsidiary_data(supscr(p), '^');
+@@ -1562,6 +1581,16 @@
+     } else if (cur_chr == 4) {  /* \.{\\Umathaccents} */
+         t = scan_mathchar(xetex_mathcode);
+         b = scan_mathchar(xetex_mathcode);
++    } else if (cur_chr == 5) {  // \Umathfixedtopaccent
++      t = scan_mathchar(xetex_mathcode);
++      subtype(tail) = 1;
++    } else if (cur_chr == 6) {  // \Umathfixedbotaccent
++      b = scan_mathchar(xetex_mathcode);
++      subtype(tail) = 1;
++    } else if (cur_chr == 7) {  // \Umathfixedaccents
++      t = scan_mathchar(xetex_mathcode);
++      b = scan_mathchar(xetex_mathcode);
++      subtype(tail) = 1;
+     } else {
+         confusion("math_ac");
+     }
+Index: source/texk/web2c/luatexdir/tex/mlist.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/mlist.w	(revision 3950)
++++ source/texk/web2c/luatexdir/tex/mlist.w	(working copy)
+@@ -2126,9 +2126,11 @@
+ @c
+ #define TOP_CODE 1
+ #define BOT_CODE 2
++#define TOP_OR_BOT_MASK ((TOP_CODE) | (BOT_CODE))
++#define STRETCH_ACCENT_CODE 4
+ 
+ static void do_make_math_accent(pointer q, internal_font_number f, int c,
+-                                int top_or_bot, int cur_style)
++                                int flags, int cur_style)
+ {
+     pointer p, r, x, y;         /* temporary registers for box construction */
+     scaled s;                   /* amount to skew the accent to the right */
+@@ -2138,6 +2140,7 @@
+     boolean s_is_absolute;      /* will be true if a top-accent is placed in |s| */
+     extinfo *ext;
+     pointer attr_p;
++    const int top_or_bot = flags & TOP_OR_BOT_MASK;
+     attr_p = (top_or_bot == TOP_CODE ? accent_chr(q) : bot_accent_chr(q));
+     s_is_absolute = false;
+     c = cur_c;
+@@ -2168,7 +2171,8 @@
+     h = height(x);
+     /* Switch to a larger accent if available and appropriate */
+     y = null;
+-    while (1) {
++    if (flags & STRETCH_ACCENT_CODE) {
++      while (1) {
+         ext = NULL;
+         if ((char_tag(f, c) == ext_tag) &&
+             ((ext = get_charinfo_hor_variants(char_info(f, c))) != NULL)) {
+@@ -2187,6 +2191,7 @@
+                 break;
+             c = yy;
+         }
++      }
+     }
+     if (y == null) {
+         y = char_box(f, c, node_attr(attr_p));
+@@ -2265,12 +2270,12 @@
+     type(nucleus(q)) = sub_box_node;
+ }
+ 
+-static void make_math_accent(pointer q, int cur_style)
++static void make_math_accent(pointer q, int cur_style, int stretch)
+ {
+     if (accent_chr(q) != null) {
+         fetch(accent_chr(q));
+         if (char_exists(cur_f, cur_c)) {
+-            do_make_math_accent(q, cur_f, cur_c, TOP_CODE, cur_style);
++          do_make_math_accent(q, cur_f, cur_c, TOP_CODE | (stretch ? STRETCH_ACCENT_CODE : 0), cur_style);
+         }
+         flush_node(accent_chr(q));
+         accent_chr(q) = null;
+@@ -2278,7 +2283,7 @@
+     if (bot_accent_chr(q) != null) {
+         fetch(bot_accent_chr(q));
+         if (char_exists(cur_f, cur_c)) {
+-            do_make_math_accent(q, cur_f, cur_c, BOT_CODE, cur_style);
++          do_make_math_accent(q, cur_f, cur_c, BOT_CODE | (stretch ? STRETCH_ACCENT_CODE : 0), cur_style);
+         }
+         flush_node(bot_accent_chr(q));
+         bot_accent_chr(q) = null;
+@@ -3417,7 +3422,7 @@
+                 make_radical(q, cur_style);
+             break;
+         case accent_noad:
+-            make_math_accent(q, cur_style);
++          make_math_accent(q, cur_style, subtype(q) == 0);
+             break;
+         case style_node:
+             cur_style = subtype(q);
