@@ -113,16 +113,54 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
  {
      pointer p, r, x, y;         /* temporary registers for box construction */
      scaled s;                   /* amount to skew the accent to the right */
-@@ -2138,6 +2140,7 @@
+@@ -2138,6 +2140,8 @@
      boolean s_is_absolute;      /* will be true if a top-accent is placed in |s| */
      extinfo *ext;
      pointer attr_p;
 +    const int top_or_bot = flags & TOP_OR_BOT_MASK;
++    const int compat_mode = radical_rule(cur_style) == undefined_math_parameter;
      attr_p = (top_or_bot == TOP_CODE ? accent_chr(q) : bot_accent_chr(q));
      s_is_absolute = false;
      c = cur_c;
-@@ -2168,7 +2171,8 @@
+@@ -2146,29 +2150,40 @@
+     s = 0;
+     if (type(nucleus(q)) == math_char_node) {
+         fetch(nucleus(q));
++        if (compat_mode) {
++          if (top_or_bot == TOP_CODE) {
++            s = get_kern(cur_f, cur_c, skew_char(cur_f));
++          } else {
++            s = 0;
++          }
++        } else {
+         if (top_or_bot == TOP_CODE) {
+             s = char_top_accent(cur_f, cur_c);
+-            if (s != 0) {
++            if (s != INT_MIN) {
+                 s_is_absolute = true;
+-            } else {
+-                s = get_kern(cur_f, cur_c, skew_char(cur_f));
+             }
+         } else {                /* new skewchar madness for bot accents */
+             s = char_bot_accent(cur_f, cur_c);
+-            if (s == 0) {       /* better than nothing: */
++            if (s == INT_MIN) {       /* better than nothing: */
+                 s = char_top_accent(cur_f, cur_c);
+             }
+-            if (s != 0) {
++            if (s != INT_MIN) {
+                 s_is_absolute = true;
+             }
+         }
++        }
+     }
+     x = clean_box(nucleus(q), cramped_style(cur_style), cur_style);
+     w = width(x);
      h = height(x);
++    if (!compat_mode && !s_is_absolute) {
++      s = half(w);
++      s_is_absolute = true;
++    }
      /* Switch to a larger accent if available and appropriate */
      y = null;
 -    while (1) {
@@ -131,7 +169,7 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
          ext = NULL;
          if ((char_tag(f, c) == ext_tag) &&
              ((ext = get_charinfo_hor_variants(char_info(f, c))) != NULL)) {
-@@ -2187,6 +2191,7 @@
+@@ -2187,6 +2202,7 @@
                  break;
              c = yy;
          }
@@ -139,7 +177,18 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
      }
      if (y == null) {
          y = char_box(f, c, node_attr(attr_p));
-@@ -2265,12 +2270,12 @@
+@@ -2223,8 +2239,9 @@
+             sa = char_top_accent(f, c);
+         else
+             sa = char_bot_accent(f, c);
+-        if (sa == 0) {
++        if (sa == INT_MIN) {
+             sa = half(width(y));        /* just take the center */
++            printf("No top accent position for accent %u\n", c);
+         }
+         shift_amount(y) = s - sa;
+     } else {
+@@ -2265,12 +2282,12 @@
      type(nucleus(q)) = sub_box_node;
  }
  
@@ -154,7 +203,7 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
          }
          flush_node(accent_chr(q));
          accent_chr(q) = null;
-@@ -2278,7 +2283,7 @@
+@@ -2278,7 +2295,7 @@
      if (bot_accent_chr(q) != null) {
          fetch(bot_accent_chr(q));
          if (char_exists(cur_f, cur_c)) {
@@ -163,7 +212,7 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
          }
          flush_node(bot_accent_chr(q));
          bot_accent_chr(q) = null;
-@@ -3417,7 +3422,7 @@
+@@ -3417,7 +3434,7 @@
                  make_radical(q, cur_style);
              break;
          case accent_noad:
@@ -172,3 +221,19 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
              break;
          case style_node:
              cur_style = subtype(q);
+Index: source/texk/web2c/luatexdir/font/luafont.w
+===================================================================
+--- source/texk/web2c/luatexdir/font/luafont.w	(Revision 3965)
++++ source/texk/web2c/luatexdir/font/luafont.w	(Arbeitskopie)
+@@ -1226,9 +1226,9 @@
+             set_charinfo_tounicode(co, NULL);
+ 
+         if (has_math) {
+-            j = n_numeric_field(L, luaS_top_accent_index, 0);
++            j = n_numeric_field(L, luaS_top_accent_index, INT_MIN);
+             set_charinfo_top_accent(co, j);
+-            j = n_numeric_field(L, luaS_bot_accent_index, 0);
++            j = n_numeric_field(L, luaS_bot_accent_index, INT_MIN);
+             set_charinfo_bot_accent(co, j);
+             k = n_numeric_field(L, luaS_next_index, -1);
+             if (k >= 0) {
