@@ -1,0 +1,33 @@
+--- /data/Philipp.Stephani/opt/texlive/2010/texmf-dist/source/luatex/luaotfload/luaotfload.dtx	2010-11-18 01:35:21.000000000 +0100
++++ luaotfload.dtx	2010-11-24 18:10:05.000000000 +0100
+@@ -587,6 +587,10 @@
+ % to the \TeX\ end.
+ %
+ %    \begin{macrocode}
++local function default_callback(fontdata)
++    -- do nothing
++end
++luatexbase.create_callback("luaotfload.patch_font", "simple", default_callback)
+ local function def_font(...)
+     local fontdata = fonts.define.read(...)
+     if type(fontdata) == "table" and fontdata.shared then
+@@ -655,7 +659,7 @@
+                 fontdata.parameters[11] = 50
+             end
+         end
+-
++        luatexbase.call_callback("luaotfload.patch_font", fontdata)
+     end
+     return fontdata
+ end
+@@ -715,6 +719,10 @@
+     luatexbase.remove_from_callback('find_vf_file',
+                                      'luaotfload.find_vf_file')
+ end
++
++function luaotfload.add_patch_callback(...)
++    luatexbase.add_to_callback("luaotfload.patch_font", ...)
++end
+ %    \end{macrocode}
+ %
+ % \iffalse
