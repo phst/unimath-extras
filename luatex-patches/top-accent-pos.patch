@@ -1,16 +1,16 @@
 Index: source/texk/web2c/luatexdir/tex/mlist.w
 ===================================================================
---- source/texk/web2c/luatexdir/tex/mlist.w	(Revision 3968)
+--- source/texk/web2c/luatexdir/tex/mlist.w	(Revision 3973)
 +++ source/texk/web2c/luatexdir/tex/mlist.w	(Arbeitskopie)
-@@ -2138,6 +2138,7 @@
+@@ -2140,6 +2140,7 @@
      boolean s_is_absolute;      /* will be true if a top-accent is placed in |s| */
      extinfo *ext;
      pointer attr_p;
 +    const int compat_mode = radical_rule(cur_style) == undefined_math_parameter;
+     const int top_or_bot = flags & TOP_OR_BOT_MASK;
      attr_p = (top_or_bot == TOP_CODE ? accent_chr(q) : bot_accent_chr(q));
      s_is_absolute = false;
-     c = cur_c;
-@@ -2146,26 +2147,36 @@
+@@ -2149,26 +2150,36 @@
      s = 0;
      if (type(nucleus(q)) == math_char_node) {
          fetch(nucleus(q));
@@ -45,14 +45,14 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
      x = clean_box(nucleus(q), cramped_style(cur_style), cur_style);
      w = width(x);
      h = height(x);
-+    if (!compat_mode && !s_is_absolute) {
++    if (!compat_mode && !s_is_absolute && type(nucleus(q)) == math_char_node) {
 +      s = half(w);
 +      s_is_absolute = true;
 +    }
      /* Switch to a larger accent if available and appropriate */
      y = null;
-     while (1) {
-@@ -2223,7 +2234,7 @@
+     if (flags & STRETCH_ACCENT_CODE) {
+@@ -2228,7 +2239,7 @@
              sa = char_top_accent(f, c);
          else
              sa = char_bot_accent(f, c);
@@ -63,7 +63,7 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
          shift_amount(y) = s - sa;
 Index: source/texk/web2c/luatexdir/font/luafont.w
 ===================================================================
---- source/texk/web2c/luatexdir/font/luafont.w	(Revision 3968)
+--- source/texk/web2c/luatexdir/font/luafont.w	(Revision 3973)
 +++ source/texk/web2c/luatexdir/font/luafont.w	(Arbeitskopie)
 @@ -1226,9 +1226,9 @@
              set_charinfo_tounicode(co, NULL);
