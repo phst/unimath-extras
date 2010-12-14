@@ -871,7 +871,7 @@ characters = {
       class = "open",
       char = "[",
       safe = true
-   }
+   },
    backslash = {
       class = "ordinary",
       char = "\\",
@@ -882,7 +882,7 @@ characters = {
       class = "close",
       char = "]",
       safe = "true"
-   }
+   },
    a = {
       class = "variable",
       family = "italic",
@@ -2748,7 +2748,7 @@ characters = {
       char = "∇",
       safe = true
    },
-   in = {
+   ["in"] = {
       class = "relation",
       char = "∈",
       safe = true
