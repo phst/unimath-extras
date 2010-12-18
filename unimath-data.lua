@@ -1,16 +1,29 @@
 module("unimath.data")
 
--- Table that maps the fixed family commands to internal family names.  The
--- keys are TeX command names (without leading backslash), the values are
--- strings containing valid Lua names.
+-- Tables that map the fixed style commands to internal style names.  The keys
+-- are TeX command names (without leading backslash), the values are either
+-- strings containing valid Lua names or tables with members "name" and "safe".
 families = {
    mathup = "upright",
-   mathrm = "text_upright",
+   mathrm = {
+      name = "text_upright",
+      safe = true
+   },
+   mathbfup = "text_bold",
+   mathit = {
+      name = "text_italic",
+      safe = true
+   }
+}
+
+mappings = {
+   mathliteral = "literal",
    mathbbit = "doublestruck_italic",
    boldsymbol = "bold",
-   mathbfup = "text_bold",
-   mathnormal = "italic",
-   mathit = "text_italic",
+   mathnormal = {
+      name = "italic",
+      safe = true
+   },
    mathbfit = "bold_italic",
    mathscr = "script",
    mathbfscr = "script_bold",
@@ -21,12 +34,20 @@ families = {
    mathbfsfup = "sansserif_bold",
    mathsfit = "sansserif_italic",
    mathbfsfit = "sansserif_bold_italic",
-   mathtt = "monospace",
-   mathcal = "calligraphic"
+   mathtt = {
+      name = "monospace",
+      safe = true
+   },
+   mathcal = {
+      name = "calligraphic",
+      safe = true
+   }
 }
 
--- The default family
+-- The default family, mapping, and style
 default_family = "upright"
+default_mapping = "literal"
+default_style = "upright"
 
 -- Table that maps characters and commands to Unicode math definitions.  The
 -- keys are either strings consisting of a single character, numbers denoting
@@ -114,16 +135,17 @@ default_family = "upright"
 --     key were the string "char" and whose value were equal to the character
 --     denoted by ε.
 --
--- 10. ζ is a table, and ζ.class is the string "variable".  Let φ be the family
---     denoted by ζ.family or, if that is nil, by the module variable
---     default_family.  If ζ.defer is true, then ζ.alphabet must be a string
+-- 10. ζ is a table, and ζ.class is the string "variable".  Let σ be the style
+--     denoted by ζ.style or, if that is nil, by the module variable
+--     default_style.  If ζ.defer is true, then ζ.alphabet must be a string
 --     which is a valid Lua name.  ζ.chars must be a table; each key in this
---     table must be contained as a value in the module-level families table,
---     and each value must be a string consisting of a single character or a
---     number denoting a Unicode scalar value.  Then, for each family–code
---     pair, ε is to be defined as a mathematical character with class 7
---     (variable).  If ζ.defer is true, the definition is deferred until a call
---     to \unimathsetup.
+--     table must refer to a valid style name as defined in the module level
+--     families and mappings tables, and each value must be a string consisting
+--     of a single character or a number denoting a Unicode scalar value.
+--     Then, for each style–code pair, ε is to be defined as a mathematical
+--     character with class 7 (variable), with the default style being σ.  If
+--     ζ.defer is true, the definition is deferred until a call to
+--     \unimathsetup.
 --
 -- 11. ε is a character definition, ζ is a table, and ζ.class is the string
 --     "accent".  ζ must contain at least one of the keys "top" and "bottom",
@@ -167,7 +189,7 @@ characters = {
    },
    ["0"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "0",
          doublestruck = "𝟘",
@@ -178,7 +200,7 @@ characters = {
    },
    ["1"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "1",
          doublestruck = "𝟙",
@@ -189,7 +211,7 @@ characters = {
    },
    ["2"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "2",
          doublestruck = "𝟚",
@@ -200,7 +222,7 @@ characters = {
    },
    ["3"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "3",
          doublestruck = "𝟛",
@@ -211,7 +233,7 @@ characters = {
    },
    ["4"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "4",
          doublestruck = "𝟜",
@@ -222,7 +244,7 @@ characters = {
    },
    ["5"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "5",
          doublestruck = "𝟝",
@@ -233,7 +255,7 @@ characters = {
    },
    ["6"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "6",
          doublestruck = "𝟞",
@@ -244,7 +266,7 @@ characters = {
    },
    ["7"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "7",
          doublestruck = "𝟟",
@@ -255,7 +277,7 @@ characters = {
    },
    ["8"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "8",
          doublestruck = "𝟠",
@@ -266,7 +288,7 @@ characters = {
    },
    ["9"] = {
       class = "variable",
-      family = "upright",
+      style = "upright",
       chars = {
          upright = "9",
          doublestruck = "𝟡",
@@ -295,7 +317,7 @@ characters = {
    -- partially auto-generated Latin letters
    A = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -317,7 +339,7 @@ characters = {
    },
    B = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -339,7 +361,7 @@ characters = {
    },
    C = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -361,7 +383,7 @@ characters = {
    },
    D = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -384,7 +406,7 @@ characters = {
    },
    E = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -406,7 +428,7 @@ characters = {
    },
    F = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -428,7 +450,7 @@ characters = {
    },
    G = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -450,7 +472,7 @@ characters = {
    },
    H = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -472,7 +494,7 @@ characters = {
    },
    I = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -494,7 +516,7 @@ characters = {
    },
    J = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -516,7 +538,7 @@ characters = {
    },
    K = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -538,7 +560,7 @@ characters = {
    },
    L = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -560,7 +582,7 @@ characters = {
    },
    M = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -582,7 +604,7 @@ characters = {
    },
    N = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -604,7 +626,7 @@ characters = {
    },
    O = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -626,7 +648,7 @@ characters = {
    },
    P = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -648,7 +670,7 @@ characters = {
    },
    Q = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -670,7 +692,7 @@ characters = {
    },
    R = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -692,7 +714,7 @@ characters = {
    },
    S = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -714,7 +736,7 @@ characters = {
    },
    T = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -736,7 +758,7 @@ characters = {
    },
    U = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -758,7 +780,7 @@ characters = {
    },
    V = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -780,7 +802,7 @@ characters = {
    },
    W = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -802,7 +824,7 @@ characters = {
    },
    X = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -824,7 +846,7 @@ characters = {
    },
    Y = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -846,7 +868,7 @@ characters = {
    },
    Z = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_capital",
       chars = {
@@ -885,7 +907,7 @@ characters = {
    },
    a = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -907,7 +929,7 @@ characters = {
    },
    b = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -929,7 +951,7 @@ characters = {
    },
    c = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -951,7 +973,7 @@ characters = {
    },
    d = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -974,7 +996,7 @@ characters = {
    },
    e = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -997,7 +1019,7 @@ characters = {
    },
    f = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1019,7 +1041,7 @@ characters = {
    },
    g = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1041,7 +1063,7 @@ characters = {
    },
    h = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1063,7 +1085,7 @@ characters = {
    },
    i = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1086,7 +1108,7 @@ characters = {
    },
    j = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1109,7 +1131,7 @@ characters = {
    },
    k = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1131,7 +1153,7 @@ characters = {
    },
    l = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1153,7 +1175,7 @@ characters = {
    },
    m = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1175,7 +1197,7 @@ characters = {
    },
    n = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1197,7 +1219,7 @@ characters = {
    },
    o = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1219,7 +1241,7 @@ characters = {
    },
    p = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1241,7 +1263,7 @@ characters = {
    },
    q = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1263,7 +1285,7 @@ characters = {
    },
    r = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1285,7 +1307,7 @@ characters = {
    },
    s = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1307,7 +1329,7 @@ characters = {
    },
    t = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1329,7 +1351,7 @@ characters = {
    },
    u = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1351,7 +1373,7 @@ characters = {
    },
    v = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1373,7 +1395,7 @@ characters = {
    },
    w = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1395,7 +1417,7 @@ characters = {
    },
    x = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1417,7 +1439,7 @@ characters = {
    },
    y = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {
@@ -1439,7 +1461,7 @@ characters = {
    },
    z = {
       class = "variable",
-      family = "italic",
+      style = "italic",
       defer = true,
       alphabet = "latin_small",
       chars = {

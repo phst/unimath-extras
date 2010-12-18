@@ -32,42 +32,6 @@
   \tex_fontdimen:D \intexpr_eval:n { #1 } \tex_scriptfont:D \c_two
 }
 
-\@ifpackageloaded {amsmath} {
-  \RenewDocumentEnvironment {subarray} {m} {
-    \tex_vcenter:D
-    \c_group_begin_token
-    \Let@
-    \restore@math@cr
-    \default@tag
-    \skip_set:Nn \tex_baselineskip:D {
-      % stack top shift + stack bottom shift
-      \umfix_fontdimen:n{32} + \umfix_fontdimen:n{34}
-    }
-    \skip_set:Nn \tex_lineskip:D {
-      % minimum stack gap
-      \umfix_fontdimen:n{36}
-    }
-    \skip_set:Nn \tex_lineskiplimit:D { \tex_lineskip:D }
-    \ialign
-    \c_group_begin_token
-    \tl_if_eq:nnT {c} {#1} { \tex_hfil:D }
-    \c_math_shift_token
-    \m@th
-    \tex_scriptstyle:D
-    \c_parameter_token \c_parameter_token
-    \c_math_shift_token
-    \tex_hfil:D
-    \tex_crcr:D
-  } {
-    \tex_crcr:D
-    \c_group_end_token
-    \c_group_end_token
-  }
-  % \umfix_patch:Nnn \subarray { \fontdimen 10 } { \fontdimen 42 }
-  % \umfix_patch:Nnn \subarray { \fontdimen 12 } { \fontdimen 44 }
-  % \umfix_patch:Nnn \subarray { \fontdimen  8 } { \fontdimen 48 }
-} {}
-
 % \@ifpackageloaded {blkarray} {
 %   \umfix_patch:Nnn \BA@place { \fontdimen 22 } { \fontdimen 15 }
 %   \umfix_patch:Nnn \BA@place { \fontdimen 22 } { \fontdimen 15 }
@@ -81,10 +45,5 @@
 %   \umfix_patch:Nnn \store@lcurly { \fontdimen 22 } { \fontdimen 15 }
 %   \umfix_patch:Nnn \store@lcurly { \fontdimen 22 } { \fontdimen 15 }
 % }
-
-\@ifpackageloaded {mathtools} {
-  \umfix_patch:Nnn \MT_cramped_internal:Nn { \fontdimen 8 } { \fontdimen 48 }
-  \umfix_patch:Nnn \MT_cramped_internal:Nn { \fontdimen 8 } { \fontdimen 48 }
-}
 
 \endinput

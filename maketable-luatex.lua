@@ -1,20 +1,30 @@
-#!/usr/bin/env texlua
-
 require("unicode")
 require("unimath-data")
 
-local function get_family_cmd(family)
-   return "\\g_um_" .. family .. "_fam"
+local function write_styles(data, kind)
+   for key, value in pairs(data) do
+      local name, safe
+      if type(value) == "string" then
+         name = value
+         safe = false
+      else
+         name = value.name
+         safe = value.safe or false
+      end
+      local safe_str = safe and "safe" or "unsafe"
+      local factory = "\\um_new_" .. safe_str .. "_" .. kind .. ":nN"
+      local name_arg = " { " .. name .. " } "
+      local command_arg = "\\" .. key
+      io.write(factory .. name_arg .. command_arg .. "\n")
+   end
 end
 
 local function write_families()
-   for key, value in pairs(unimath.data.families) do
-      local family = get_family_cmd(value)
-      io.write("\\chk_if_free_cs:N " .. family .. "\n")
-      io.write("\\newfam " .. family .. "\n")
-      local command = "\\" .. key
-      io.write("\\cs_new_protected_nopar:Npn " .. command .. " #1 { \\c_group_begin_token \\fam " .. family .. " #1 \\c_group_end_token }\n")
-   end
+   write_styles(unimath.data.families, "family")
+end
+
+local function write_mappings()
+   write_styles(unimath.data.mappings, "mapping")
 end
 
 local class_codes = {
@@ -48,39 +58,54 @@ local function get_entity_ctlseq(entity)
    end
 end
 
-local function start_definition(entity, safe)
-   if is_entity_code(entity) then
-      local code = get_entity_code(entity)
-      io.write("\\luatexUmathcode " .. code .. "~ ")
-   else
-      local ctlseq = get_entity_ctlseq(entity)
-      if safe == false then
-         io.write("\\um_check_unsafe:N " .. ctlseq .. "\n")
+local function get_delim_code(entity, delim)
+   if type(delim) == "nil" then
+      return -1
+   elseif type(delim) == "bool" then
+      if delim then
+         return get_entity_code(entity)
+      else
+         return -1
       end
-      io.write("\\luatexUmathchardef " .. ctlseq .. " ")
+   else
+      return get_entity_code(delim)
    end
 end
+
 
 -- rules 1 to 5
 local function write_simple_def(entity, definition)
    -- mathematical code or character definition
-   start_definition(entity, definition.safe or false)
-   local class = definition.class or "ordinary"
-   local family = get_family_cmd(definition.family or unimath.data.default_family)
-   local char = definition.char or entity
-   local code = get_entity_code(char)
-   io.write(class_codes[class] .. "~ " .. family .. " " .. code .. "~\n")
-   -- delimiter code
-   local delim = definition.delim
-   if type(delim) == "bool" and delim == true then
-      delim = code
-   elseif is_entity_code(delim) then
-      delim = get_entity_code(delim)
+   local is_code = is_entity_code(entity)
+   local factory, entity_arg
+   if is_code then
+      factory = "\\um_assign_mathcode:nNNn"
+      local entity_code = get_entity_code(entity)
+      entity_arg = " { " .. entity_code .. " }"
    else
-      delim = false
+      local safe = definition.safe or false
+      local safe_str = safe and "safe" or "unsafe"
+      factory = "\\um_new_" .. safe_str .. "_chdef:NNNn"
+      local entity_ctlseq = get_entity_ctlseq(entity)
+      entity_arg = " " .. entity_ctlseq
    end
-   if delim ~= false then
-      io.write("\\luatexUdelcode " .. code .. " = " .. family .. " " .. delim .. "~\n")
+   local class = definition.class or "ordinary"
+   local class_arg = " \\c_um_class_" .. class .. "_int"
+   local family = definition.family or unimath.data.default_family
+   local family_arg = " \\g_um_" .. family .. "_fam"
+   local char = definition.char or entity
+   local mathcode = get_entity_code(char)
+   local mathcode_arg = " { " .. mathcode .. " }"
+   io.write(factory .. entity_arg .. class_arg .. family_arg .. mathcode_arg .. "\n")
+   -- delimiter code
+   if is_code then
+      local delim = definition.delim or false
+      if delim then
+         local delcode = get_delim_code(entity, delim)
+         local delcode_arg = " { " .. delcode .. " }"
+         local factory = "\\um_assign_delcode:nNn"
+         io.write(factory .. entity_arg .. family_arg .. delcode_arg .. "\n")
+      end
    end
 end
 
@@ -113,6 +138,7 @@ end
 
 io.output("unicode-math-table-luatex-immediate.tex")
 write_families()
+write_mappings()
 write_immediate_defs()
 io.close()
 

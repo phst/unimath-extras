@@ -1,0 +1,95 @@
+% Families
+
+\cs_new_protected_nopar:Nn \um_new_unsafe_family:nN {
+  \um_if_overwrite:nNT { family } #2 {
+    \um_declare_family:nN { #1 } #2
+  }
+}
+
+\cs_new_protected_nopar:Nn \um_new_safe_family:nN {
+  \um_declare_family:nn { #1 } #2
+}
+
+\cs_new_protected_nopar:Nn \um_declare_family:nN {
+  \exp_args:Nc \um_declare_family:NN { g_um_ #1 _fam }
+}
+
+\cs_new_protected_nopar:Nn \um_declare_family:NN {
+  \newfam #1
+  \DeclareDocumentCommand #2 { m } {
+    \c_group_begin_token:
+    \fam #1
+    ##1
+    \c_group_end_token:
+  }
+}
+
+
+% Mappings
+
+\cs_new_protected_nopar:Nn \um_new_unsafe_mapping:nN {
+  \um_if_overwrite:nNT { mapping } #2 {
+    \um_declare_mapping:nN { #1 } #2
+  }
+}
+
+\cs_new_protected_nopar:Nn \um_new_safe_mapping:nN {
+  \um_declare_mapping:nN { #1 } #2
+}
+
+\cs_new_protected_nopar:Nn \um_declare_mapping:nN {
+  \exp_args:Nc \um_declare_mapping:NN { um_switch_to_ #1 : }
+}
+
+\cs_new_protected_nopar:Nn \um_declare_mapping:NN {
+  \cs_new_protected_nopar:Nn #1 { }
+  \DeclareDocumentCommand #2 { m } {
+    \c_group_begin_token:
+    #1
+    ##1
+    \c_group_end_token:
+  }
+}
+
+
+% Classes
+
+\int_const:Nn \c_um_class_ordinary    { 0 }
+\int_const:Nn \c_um_class_operator    { 1 }
+\int_const:Nn \c_um_class_binary      { 2 }
+\int_const:Nn \c_um_class_relation    { 3 }
+\int_const:Nn \c_um_class_open        { 4 }
+\int_const:Nn \c_um_class_close       { 5 }
+\int_const:Nn \c_um_class_punctuation { 6 }
+\int_const:Nn \c_um_class_variable    { 7 }
+
+
+% Mathematical codes
+
+\cs_new_protected_nopar:Nn \um_assign_mathcode:nNNn {
+  \luatexUmathcode #1~ #2 #3 #4~
+}
+
+
+% Delimiter codes
+
+\cs_new_protected_nopar:Nn \um_assign_delcode:nNn {
+  \luatexUdelcode #1~ #2 #3~
+}
+
+
+% Mathematical character definitions
+
+\cs_new_protected_nopar:Nn \um_new_unsafe_chdef:NNNn {
+  \um_if_overwrite:nNT { mathchardef } #1 {
+    \um_declare_chdef:nN #1 #2 #3 { #4 }
+  }
+}
+
+\cs_new_protected_nopar:Nn \um_new_safe_chdef:NNNn {
+  \um_declare_chdef:nn #1 #2 #3 { #4 }
+}
+
+\cs_new_protected_nopar:Nn \um_declare_chdef:NNNn {
+  \luatexUmathchardef #1 #2 #3 #4~
+}

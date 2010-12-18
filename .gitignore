@@ -6,3 +6,7 @@ auto/
 *.synctex.gz
 *.aux
 *.tuc
+table-symbols.lua
+unicode-math-table*
+*.html
+*.zip
