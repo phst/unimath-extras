@@ -1,5 +1,12 @@
+The ``unimath-extras`` repository
+=================================
+
+This repository contains mostly nonsense that I use to play around with OTF
+math typesetting.
+
+
 ``overwrite-safe-syms.py``
-==========================
+--------------------------
 
 Finds out which symbols from the Unicode math table have already been defined
 by the LaTeX kernel or standard packages such as ``amsmath``.  These symbols

@@ -1,0 +1,195 @@
+\input luaotfload.sty
+
+\def\gobble#1{}
+
+\def\accentcharlist{\gobble}
+\def\accentlist{}
+
+\protected\def\makeaccent#1#2#3#4#5#6{%
+  \begingroup
+  \escapechar=-1
+  \global\expandafter\chardef\csname\string#1char\endcsname="#3#4#5#6
+  \gdef#1{\Umathfixedtopaccent #2 0 "#3#4#5#6 }
+  \xdef\accentcharlist{\accentcharlist,0x#3#4#5#6}
+  \xdef\accentlist{\accentlist\noexpand#1}
+  \endgroup
+}
+
+% \makeaccent\acute00B4
+% \makeaccent\bar02C9
+% \makeaccent\breve02D8
+% \makeaccent\check02C7
+% \makeaccent\ddot00A8
+% \makeaccent\dot02D9
+% \makeaccent\grave0060
+% \makeaccent\hat02C6
+% \makeaccent\mathring02DA
+% \makeaccent\tilde02DC
+\makeaccent\acute70301
+\makeaccent\bar70304
+\makeaccent\breve70306
+\makeaccent\check7030C
+\makeaccent\ddot70308
+\makeaccent\dot70307
+\makeaccent\grave70300
+\makeaccent\hat70302
+\makeaccent\mathring7030A
+\makeaccent\tilde70303
+\makeaccent\harpoon020D1
+\makeaccent\vec020D7
+
+\font\cambria={name:Cambria Math:mode=base;script=math} at 12pt
+
+\directlua{%
+  print("\string\n")
+  local accents = { \accentcharlist }
+  local i = font.id("cambria")
+  local f = font.getfont(i)
+  local w = -f.characters[\the\gravechar].top_accent / 364
+  local c = f.characters[\the\dotchar]
+  %c.width = -(400 + 177) * w
+  % c.top_accent = c.top_accent - 2 * (400 + 177) * w
+  local c = f.characters[\the\ddotchar]
+  %c.width = -(609 - 32) * w
+  % c.top_accent = c.top_accent - 2 * (609 - 32) * w
+  local c = f.characters[0x1D434]
+  %c.top_accent = c.top_accent - 2 * (13 + 112) * w
+  for j, c in pairs(f.characters) do
+    if not c.top_accent or c.top_accent == 0 then
+      %c.top_accent = c.width / 2
+    end
+    % c.top_accent = 0.5 * c.width + 0.333 * c.top_accent
+    if j > 0x10000 then
+      %c.italic = -100000
+      % c.width = 500000
+    % c.top_accent = c.top_accent - c.width / 2
+      %c.top_accent = c.width - 0.5 * c.top_accent
+      local old = c.top_accent
+      %c.top_accent = 0.367 * c.width - 0.03 * c.top_accent
+      %c.top_accent = 303000 + 0.274 * c.width - 0.864 * c.top_accent
+      if j >= 0x1D434 and j < 0x1D434 + 26 then
+        %print(string.char(j - 0x1D434 + 65), c.width, old, c.top_accent)
+      end
+      if c.top_accent == 0 then
+        %c.top_accent = c.width
+        %c.top_accent = (c.top_accent + c.width) / 2
+      else
+    %  c.top_accent = -c.top_accent
+      end
+    end
+  end
+  for j, a in pairs(accents) do
+    local c = f.characters[a]
+    if c then
+      %c.next = nil
+      %c.extensible = nil
+      %c.horiz_variants = nil
+      if not c.top_accent then
+        print("Missing top accent")
+        %c.top_accent = 1
+      end
+      %if c.top_accent == 0 then
+        %c.top_accent = 1
+      %end
+      if c.top_accent then
+        if c.top_accent < 0 then
+          %c.top_accent = c.width + c.top_accent
+        end
+        % c.top_accent = -c.top_accent
+        %if c.top_accent == 0 then
+          %c.top_accent = 1
+        %else
+           %c.top_accent = 0
+          % c.top_accent = -c.top_accent
+        %end
+      end
+      % c.top_accent = 1
+      %print(j, c.width, c.top_accent)
+    end
+  end
+  %font.setfont(i, f)
+}
+
+\cambria
+\textfont0=\cambria
+
+\begingroup
+\edef\\{\string\\}
+\directlua{%
+  local accents = { \accentcharlist }
+  local function alphabet(from, to)
+    for i, a in pairs(accents) do
+      for j = from, to do
+        tex.print("$\\Umathfixedtopaccent 0 0 " .. a .. " \string\\Umathchar 0 0 " .. j .. "$ ")
+        %tex.print("\\hbox{\\vbox{\\hbox{\\char" .. a .. "}\\hbox{\\char" .. j .. "}}} ")
+      end
+      tex.print("\\par")
+    end
+  end
+  alphabet(0x41, 0x5A)
+  alphabet(0x61, 0x7A)
+  alphabet(0x1D434, 0x1D467)
+}
+\endgroup
+
+$
+\Umathaccent "0 "0 "0307 \Umathchar "0 "0 "4E \quad
+\Umathaccent "0 "0 "0307 \Umathchar "0 "0 "1D441 \quad
+\Umathaccent "0 "0 "02D9 \Umathchar "0 "0 "4E \quad
+\Umathaccent "0 "0 "02D9 \Umathchar "0 "0 "1D441 \quad
+% \Umathaccent "0 "0 -"1100B2 \Umathchar "0 "0 "4E \quad
+% \Umathaccent "0 "0 -"1100B2 \Umathchar "0 "0 "1D441 \quad
+\Umathaccent "0 "0 "20D7 \Umathchar "0 "0 "76 \quad
+\Umathaccent "0 "0 "20D7 \Umathchar "0 "0 "1D463
+$
+
+\bye
+
+\begingroup
+\begingroup
+\escapechar=-1
+\edef\x{%
+  \endgroup
+  \def\noexpand\\{\string\\}%
+  \def\noexpand\%{\string\%}%
+}
+\x
+\edef\n{\string\n}
+\edef\"{\string\"}
+\catcode`\_=12
+\tt
+\directlua{%
+  local function table_print (tt, indent, done)
+    done = done or {}
+    indent = indent or 0
+    if type(tt) == "table" then
+      local sb = {}
+      for key, value in pairs (tt) do
+        table.insert(sb, string.rep (" ", indent))
+        if type (value) == "table" and not done [value] then
+          done [value] = true
+          table.insert(sb, "{\n");
+          table.insert(sb, table_print (value, indent + 2, done))
+          table.insert(sb, string.rep (" ", indent))
+          table.insert(sb, "}\n");
+        elseif "number" == type(key) then
+          table.insert(sb, string.format("\"\%s\"\n", tostring(value)))
+        else
+          table.insert(sb, string.format(
+              "\%s = \"\%s\"\n", tostring (key), tostring(value)))
+         end
+      end
+      return table.concat(sb)
+    else
+      return tt .. "\n"
+    end
+  end
+
+  local f = font.getfont(font.id("cambria"))
+  tex.print(table_print(f.characters[0x76]), table_print(f.characters[0x1D463]))
+}
+\endgroup
+\bye
+% Local Variables:
+% TeX-engine: luatex
+% End:

@@ -1,0 +1,42 @@
+\documentclass{article}
+
+\usepackage{xparse}
+
+\ExplSyntaxOn
+
+\luatex_if_engine:TF {
+  \use:n
+} {
+  \xetex_if_engine:TF {
+    \use:n
+  } {
+    \use_none:n
+  }
+} {
+  \usepackage { unicode-math }
+  \setmathfont { Cambria~ Math }
+}
+
+\NewDocumentCommand \AlphabetWithAccent { m } {
+  \prg_stepwise_inline:nnnn { 1 } { 1 } { 26 } {
+    \c_math_shift_token #1 { \int_to_alph:n { ##1 } } \c_math_shift_token \c_space_token
+    \c_math_shift_token #1 { \int_to_Alph:n { ##1 } } \c_math_shift_token \c_space_token
+  }
+  \par
+}
+
+\NewDocumentCommand \AlphabetsWithAccents { } {
+  \tl_map_function:nN {
+    \acute \bar \breve \check \ddot \dot
+    \grave \hat \mathring \tilde \vec
+  } \AlphabetWithAccent
+}
+
+\ExplSyntaxOff
+
+
+\begin{document}
+
+\AlphabetsWithAccents
+
+\end{document}

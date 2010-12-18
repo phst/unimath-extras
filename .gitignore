@@ -5,3 +5,4 @@ auto/
 *.pdf
 *.synctex.gz
 *.aux
+*.tuc

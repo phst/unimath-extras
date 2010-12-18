@@ -1,0 +1,17 @@
+\usetypescript[cambria]
+\setupbodyfont[cambria]
+
+\def\AlphabetWithAccent#1{%
+  \dorecurse{26}{$#1{\character{\recurselevel}}$ $#1{\Character{\recurselevel}}$ }\par
+}
+
+\def\AlphabetsWithAccents{%
+  \processcommalist[\acute,\bar,\breve,\check,\ddot,\dot,\grave,\hat,\mathring,\tilde,\vec]\AlphabetWithAccent
+}
+
+
+\starttext
+
+\AlphabetsWithAccents
+
+\stoptext

@@ -1,0 +1,39 @@
+\documentclass{article}
+
+\usepackage{xparse}
+
+\ExplSyntaxOn
+
+\luatex_if_engine:TF {
+  \NewDocumentCommand \ConTeXtInt { } { \luatexUmathchar "1 "0 "222B \nolimits }
+  \use_i:nn
+} {
+  \NewDocumentCommand \ConTeXtInt { } { }
+  \xetex_if_engine:TF {
+    \use_i:nn
+  } {
+    \use_ii:nn
+  }
+} {
+  \usepackage { unicode-math }
+  \setmathfont { Cambria~ Math }
+} {
+  \usepackage { amsmath }
+}
+
+\luatex_if_engine:T {
+  \luatexUmathoperatorsize\displaystyle=13pt
+}
+
+\ExplSyntaxOff
+
+
+\begin{document}
+
+\texttt{\string\intop\ =\ \meaning\intop\\\string\int\ =\ \meaning\int}
+
+\[ \displaystyle \intop \int \intop\nolimits \intop\limits \intop\displaylimits \ConTeXtInt \iint \iiint \iiiint \]
+
+\fontname\textfont4
+
+\end{document}
