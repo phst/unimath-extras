@@ -1,0 +1,121 @@
+% Copyright (C) 2010 by Philipp Stephani <st_philipp@yahoo.de>
+%
+% This file may be distributed and/or modified under the conditions of the
+% LaTeX Project Public License, either version 1.3c of this license or (at your
+% option) any later version.  The latest version of this license is in:
+%
+%    http://www.latex-project.org/lppl.txt
+%
+% and version 1.3c or later is part of all distributions of LaTeX version
+% 2009/09/24 or later.
+
+\RequirePackage{expl3}
+\ProvidesExplPackage{directed-graph}{2010/11/02}{0.1}%
+  {Implements a directed graph}
+
+\cs_new_protected_nopar:Npn \digraph_new:N #1 { \seq_new:N #1 }
+
+\cs_new_protected:Npn \digraph_add:NnnN #1 #2 #3 #4 {
+  \exp_args:NNc \digraph_add_aux:NNNn #1 { l_digraph_count_ #2 _int } #4 { #3 }
+}
+
+\cs_new_protected:Npn \digraph_add_aux:NNNn #1 #2 #3 #4 {
+  \seq_put_right:Nn #1 { #2 #3 { #4 } }
+  \int_new:N #2
+}
+
+\cs_new_protected_nopar:Npn \digraph_topological_sort:NN #1 #2 {
+  \digraph_calc_predec:N #1
+  \digraph_if_acyclic:NTF #1 {
+    \bool_while_do:nn { \digraph_if_contains_unmarked_p:N #1 } {
+      \seq_map_inline:Nn #1 {
+        \digraph_topological_sort_aux_i:NNNn #2 ##1
+      }
+    }
+  } {
+    \msg_error:nn { directed-graph } { cyclic }
+  }
+}
+
+\cs_new_protected:Npn \digraph_topological_sort_aux_i:NNNn #1 #2 #3 #4 {
+  \int_if_zero:NT #2 {
+    #1 { #4 }
+    \int_set_minus_one:N #1
+    \seq_map_inline:Nn #3 {
+      \digraph_topological_sort_aux_ii:NNn ##1
+    }
+  }
+}
+
+\cs_new_protected:Npn \digraph_topological_sort_aux_ii:NNn #1 #2 #3 {
+  \int_decr:N #1
+}
+
+\cs_new_protected_nopar:Npn \digraph_calc_predec:N #1 {
+  \digraph_reset_predec:N #1
+  \digraph_calc_predec_aux_i:N #1
+}
+   
+\cs_new_protected_nopar:Npn \digraph_calc_predec_aux_i:N #1 {
+  \seq_map_inline:Nn #1 {
+    \digraph_calc_predec_aux_ii:NNn ##1
+  }
+}
+
+\cs_new_protected:Npn \digraph_calc_predec_aux_ii:NNn #1 #2 #3 {
+  \digraph_calc_predec_aux_iii:N #2
+}
+
+\cs_new_protected_nopar:Npn \digraph_calc_predec_aux_iii:N #1 {
+  \seq_map_inline:Nn #1 {
+    \digraph_calc_predec_aux_iv:NNn ##1
+  }
+}
+
+\cs_new_protected:Npn \digraph_calc_predec_aux_iv:NNn #1 #2 #3 {
+  \int_incr:N #1
+  \digraph_calc_predec_aux_iii:N #2
+}
+
+\cs_new_protected_nopar:Npn \digraph_reset_predec:N #1 {
+  \seq_map_inline:Nn #1 {
+    \digraph_reset_predec_aux:NNn ##1
+  }
+}
+
+\cs_new_protected:Npn \digraph_reset_predec_aux:NNn #1 #2 #3 {
+  \int_zero:N #1
+  \digraph_reset_predec:N #2
+}
+
+\prg_new_protected_conditional:Npnn \digraph_if_acyclic:N #1 { p, T, F, TF } {
+  \seq_map_inline:Nn #1 {
+    \digraph_if_acyclic_aux:NNn ##1
+  }
+  \prg_return_false:
+}
+
+\cs_new_protected:Npn \digraph_if_acyclic_aux:NNn #1 #2 #3 {
+  \int_compare:nNnT { #1 } = { \c_zero } {
+    \prg_return_true:
+  }
+}
+
+\prg_new_protected_conditional:Npnn \digraph_contains_unmarked:N #1 { p, T, F, TF } {
+  \seq_map_inline:Nn #1 {
+    \digraph_contains_unmarked_aux:NNn ##1
+  }
+  \prg_return_false:
+}
+
+\cs_new_protected:Npn \digraph_contains_unmarked_aux:NNn #1 #2 #3 {
+  \int_if_minus_one:NF #1 {
+    \prg_return_true:
+  }
+}
+
+\msg_new:nnn { directed-graph } { cyclic } {
+  Directed~ graph~ contains~ cycles
+}
+
+\endinput

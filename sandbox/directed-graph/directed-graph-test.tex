@@ -1,0 +1,22 @@
+\documentclass{minimal}
+
+\usepackage{directed-graph}
+
+\begin{document}
+
+\errorcontextlines=100
+
+\ExplSyntaxOn
+
+\digraph_new:N \test_a
+\digraph_new:N \test_b
+
+\digraph_add:NnnN \test_a { b } { b } \test_b
+
+\digraph_topological_sort:NN \test_a \typeout
+
+\ExplSyntaxOff
+
+\null
+
+\end{document}

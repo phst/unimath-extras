@@ -1,0 +1,69 @@
+\documentclass[pagesize=auto, version=last]{scrartcl}
+
+\usepackage{graphicx}
+\usepackage{unicode-math}
+
+\setmathfont{Cambria Math}
+
+\makeatletter
+\ExplSyntaxOn
+
+\cs_set_nopar:Npn \r@@t #1#2 {
+  \setbox\z@\hbox{$\m@th #1\sqrtsign{#2}$}
+  \um_mathstyle_scale:Nnn{#1}{\kern}{\fontdimen63\l_um_font}
+  \raise \um_fontdimen_to_percent:nn{65}{\l_um_font}\dimexpr\ht\z@-\dp\z@\relax \copy \rootbox
+  \um_mathstyle_scale:Nnn{#1}{\kern}{\fontdimen64\l_um_font}
+  \box \z@
+}
+
+\cs_set:Npn \um_fontdimen_to_percent:nn #1#2 {
+  \strip@pt\dimexpr655.36\fontdimen#1#2\relax
+}
+
+\cs_new_nopar:Nn \print_fontdimen:nn {
+  #2 & \the \fontdimen #1 \l_um_font
+}
+
+\cs_new_nopar:Nn \print_fontfactor:nn {
+  #2 & \number \fontdimen #1 \l_um_font
+}
+
+\NewDocumentCommand \testradical { } {
+  \begin{tabular}{ll}
+    \print_fontdimen:nn { 59 } { RadicalVerticalGap } \\
+    \print_fontdimen:nn { 60 } { RadicalDisplayStyleVerticalGap } \\
+    \print_fontdimen:nn { 61 } { RadicalRuleThickness } \\
+    \print_fontdimen:nn { 62 } { RadicalExtraAscender } \\
+    \print_fontdimen:nn { 63 } { RadicalKernBeforeDegree } \\
+    \print_fontdimen:nn { 64 } { RadicalKernAfterDegree } \\
+    \print_fontfactor:nn { 65 } { RadicalDegreeBottomRaisePercent }
+  \end{tabular}
+  \scalebox { 4 } { $\displaystyle \sqrt[2]{\frac12} \sqrt[2]{1}$ }
+}
+
+\ExplSyntaxOff
+\makeatother
+
+
+\begin{document}
+
+\errorcontextlines=10
+
+\testradical
+
+\resetmathfont{Cambria Math}
+
+\ExplSyntaxOn
+\fontdimen60\l_um_font=10pt~
+\fontdimen61\l_um_font=10pt~
+\fontdimen62\l_um_font=10pt~
+\fontdimen65\l_um_font=-20sp~
+\ExplSyntaxOff
+
+\testradical
+
+\end{document}
+
+% Local Variables:
+% TeX-engine: xetex
+% End:
