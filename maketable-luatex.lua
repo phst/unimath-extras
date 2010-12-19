@@ -1,7 +1,7 @@
 require("unicode")
 require("unimath-data")
 
-local function write_styles(data, kind)
+local function write_styles(kind, data, default)
    for key, value in pairs(data) do
       local name, safe
       if type(value) == "string" then
@@ -13,18 +13,23 @@ local function write_styles(data, kind)
       end
       local safe_str = safe and "safe" or "unsafe"
       local factory = "\\um_new_" .. safe_str .. "_" .. kind .. ":nN"
-      local name_arg = " { " .. name .. " } "
-      local command_arg = "\\" .. key
-      io.write(factory .. name_arg .. command_arg .. "\n")
+      local name_arg = " { " .. name .. " }"
+      local isdefault = name == default
+      local isdefault_arg = " { " .. tostring(isdefault) .. " }"
+      local command_arg = " \\" .. key
+      io.write(factory .. name_arg .. isdefault_arg .. command_arg .. "\n")
    end
+   local setdefault = "\\um_set_default_" .. kind .. ":n"
+   local name_arg = " { " .. default .. " }"
+   io.write(setdefault .. name_arg .. "\n")
 end
 
 local function write_families()
-   write_styles(unimath.data.families, "family")
+   write_styles("family", unimath.data.families, unimath.data.default_family)
 end
 
 local function write_mappings()
-   write_styles(unimath.data.mappings, "mapping")
+   write_styles("mapping", unimath.data.mappings, unimath.data.default_mapping)
 end
 
 local class_codes = {
