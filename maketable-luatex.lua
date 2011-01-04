@@ -1,3 +1,5 @@
+#!/usr/bin/env lua
+
 require("unicode")
 require("unimath-data")
 
