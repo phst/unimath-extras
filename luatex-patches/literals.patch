@@ -1,0 +1,169 @@
+Index: source/texk/web2c/luatexdir/tex/textoken.h
+===================================================================
+--- source/texk/web2c/luatexdir/tex/textoken.h	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/textoken.h	(working copy)
+@@ -68,6 +68,7 @@
+ extern halfword backup_head;    /* head of token list built by |scan_keyword| */
+ 
+ extern void initialize_tokens(void);
++extern void initialize_literals(void);
+ 
+ extern int dyn_used;
+ 
+Index: source/texk/web2c/luatexdir/tex/textoken.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/textoken.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/textoken.w	(working copy)
+@@ -448,6 +448,8 @@
+ 
+ @ @c
+ static boolean process_sup_mark(void);  /* below */
++static boolean process_sub_mark(void);
++static void end_literal(void);
+ 
+ static int scan_control_sequence(void); /* below */
+ 
+@@ -815,9 +817,15 @@
+   SWITCH:
+     if (iloc <= ilimit) {       /* current line not yet finished */
+         do_buffer_to_unichar(cur_chr, iloc);
+-
+       RESWITCH:
+-        if (detokenized_line()) {
++        if (cur_input.literal_catcode_table == NO_CAT_TABLE) {
++          if (cur_chr == cur_input.literal_delimiter) {
++            end_literal();
++            goto SWITCH;
++          } else {
++            cur_cmd = 12;
++          }
++        } else if (detokenized_line()) {
+             cur_cmd = (cur_chr == ' ' ? 10 : 12);
+         } else {
+             do_get_cat_code(cur_cmd);
+@@ -866,6 +874,15 @@
+             else
+                 istate = mid_line;
+             break;
++        case mid_line + sub_mark_cmd:
++        case new_line + sub_mark_cmd:
++        case skip_blanks + sub_mark_cmd:
++          if (process_sub_mark()) {
++            goto SWITCH;
++          } else {
++            istate = mid_line;
++          }
++          break;
+         case mid_line + invalid_char_cmd:
+         case new_line + invalid_char_cmd:
+         case skip_blanks + invalid_char_cmd:   /* Decry the invalid character and |goto restart|; */
+@@ -917,7 +934,6 @@
+         case mid_line + math_shift_cmd:
+         case mid_line + tab_mark_cmd:
+         case mid_line + mac_param_cmd:
+-        case mid_line + sub_mark_cmd:
+         case mid_line + letter_cmd:
+         case mid_line + other_char_cmd:
+             break;
+@@ -925,13 +941,11 @@
+                case skip_blanks + math_shift:
+                case skip_blanks + tab_mark:
+                case skip_blanks + mac_param:
+-               case skip_blanks + sub_mark:
+                case skip_blanks + letter:
+                case skip_blanks + other_char:     
+                case new_line    + math_shift:
+                case new_line    + tab_mark:
+                case new_line    + mac_param:
+-               case new_line    + sub_mark:
+                case new_line    + letter:
+                case new_line    + other_char: 
+ #else
+@@ -1068,6 +1082,49 @@
+     return false;
+ }
+ 
++static packed_ASCII_code get_literal_closing_delimiter(packed_ASCII_code opening_delimiter);
++
++#define LUATEX_TOKEN_NUM_LITERAL_DELIMITERS 0x80
++
++static packed_ASCII_code literal_closing_delimiters[LUATEX_TOKEN_NUM_LITERAL_DELIMITERS];
++
++void initialize_literals(void) {
++  memset(literal_closing_delimiters, 0, LUATEX_TOKEN_NUM_LITERAL_DELIMITERS);
++  literal_closing_delimiters['\''] = '\'';
++  literal_closing_delimiters['"'] = '"';
++  literal_closing_delimiters['('] = ')';
++  literal_closing_delimiters['['] = ']';
++  literal_closing_delimiters['{'] = '}';
++}
++
++static boolean process_sub_mark(void) {
++  if (iloc < ilimit && cur_chr == buffer[iloc]) {
++    const packed_ASCII_code opening_delimiter = buffer[iloc + 1];
++    const packed_ASCII_code closing_delimiter = get_literal_closing_delimiter(opening_delimiter);
++    if (closing_delimiter != 0) {
++      cur_input.literal_catcode_table = NO_CAT_TABLE;
++      cur_input.literal_delimiter = closing_delimiter;
++      iloc += 2;
++      istate = mid_line;
++      return true;
++    }
++  }
++  return false;
++}
++
++static void end_literal(void) {
++  cur_input.literal_catcode_table = DEFAULT_CAT_TABLE;
++  cur_input.literal_delimiter = 0;
++}
++
++static packed_ASCII_code get_literal_closing_delimiter(const packed_ASCII_code opening_delimiter) {
++  if (opening_delimiter > 0 && opening_delimiter < LUATEX_TOKEN_NUM_LITERAL_DELIMITERS) {
++    return literal_closing_delimiters[opening_delimiter];
++  } else {
++    return 0;
++  }
++}
++
+ @ Control sequence names are scanned only when they appear in some line of
+    a file; once they have been scanned the first time, their |eqtb| location
+    serves as a unique identification, so \TeX\ doesn't need to refer to the
+Index: source/texk/web2c/luatexdir/tex/inputstack.h
+===================================================================
+--- source/texk/web2c/luatexdir/tex/inputstack.h	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/inputstack.h	(working copy)
+@@ -39,6 +39,8 @@
+     quarterword index_field:8;
+     boolean partial_field:8;    /* is the current line partial? (see textoken.c) */
+     boolean nofilter_field:8;   /* used by token filtering */
++  int literal_catcode_table;
++  packed_ASCII_code literal_delimiter;
+ } in_state_record;
+ 
+ extern in_state_record *input_stack;
+Index: source/texk/web2c/luatexdir/tex/inputstack.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/inputstack.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/inputstack.w	(working copy)
+@@ -621,6 +621,8 @@
+     luacstrings = 0;
+     line_catcode_table = DEFAULT_CAT_TABLE;
+     line_partial = false;
++    cur_input.literal_catcode_table = DEFAULT_CAT_TABLE;
++    cur_input.literal_delimiter = 0;
+     align_state = 1000000;
+     if (!init_terminal())
+         exit(EXIT_FAILURE);     /* |goto final_end|; */
+Index: source/texk/web2c/luatexdir/tex/maincontrol.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/maincontrol.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/maincontrol.w	(working copy)
+@@ -3479,6 +3479,7 @@
+ 
+     mag_set = 0;
+     initialize_marks();
++    initialize_literals();
+     initialize_read();
+ 
+     assert(static_pdf == NULL);
