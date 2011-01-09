@@ -1,0 +1,280 @@
+Index: source/texk/web2c/luatexdir/tex/texnodes.h
+===================================================================
+--- source/texk/web2c/luatexdir/tex/texnodes.h	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/texnodes.h	(working copy)
+@@ -335,9 +335,10 @@
+     delta_node,
+     passive_node,
+     shape_node,
++    math_inner_noad,
+ } node_types;
+ 
+-#  define MAX_NODE_TYPE 58
++#  define MAX_NODE_TYPE 59
+ 
+ #  define last_known_node temp_node     /* used by \lastnodetype */
+ 
+@@ -354,7 +355,7 @@
+ #  define pseudo_file_node_size 2
+ #  define pseudo_lines(a) vlink((a)+1)
+ 
+-#  define nodetype_has_attributes(t) (((t)<=glyph_node) && ((t)!=unset_node))
++#  define nodetype_has_attributes(t) ((((t)<=glyph_node) && ((t)!=unset_node)) || ((t) == math_inner_noad))
+ 
+ /* style and choice nodes */
+ /* style nodes can be smaller, the information is encoded in |subtype|,
+@@ -408,6 +409,11 @@
+ 
+ #  define degree(a) vinfo((a)+4)        /* the root degree in a radical noad */
+ 
++/* math inner noads */
++#define math_inner_noad_size 5
++#define math_inner_noad_left_class(a) (vinfo((a) + 4))
++#define math_inner_noad_right_class(a) (vlink((a) + 4))
++
+ #  define math_kernel_node_size 3
+ 
+ /* accessors for the |nucleus|-style node fields */
+@@ -417,13 +423,14 @@
+ 
+ /* accessors for the |delimiter|-style two-word subnode fields */
+ 
+-#  define math_shield_node_size 4
++#  define math_shield_node_size 5
+                                 /* not used yet */
+ 
+ #  define small_fam(A)  vinfo((A)+2)    /* |fam| for ``small'' delimiter */
+ #  define small_char(A) vlink((A)+2)    /* |character| for ``small'' delimiter */
+ #  define large_fam(A)  vinfo((A)+3)    /* |fam| for ``large'' delimiter */
+ #  define large_char(A) vlink((A)+3)    /* |character| for ``large'' delimiter */
++#define delimiter_class(A) vinfo((A)+4)
+ 
+ typedef enum {
+     open_node = 0,
+Index: source/texk/web2c/luatexdir/tex/texnodes.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/texnodes.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/texnodes.w	(working copy)
+@@ -120,9 +120,12 @@
+ const char *node_fields_math_char[] = { "attr", "fam", "char", NULL };
+ const char *node_fields_sub_box[] = { "attr", "head", NULL };
+ const char *node_fields_sub_mlist[] = { "attr", "head", NULL };
++const char *node_fields_math_inner[] = {
++  "attr", "nucleus", "sub", "sup", "left_class", "right_class", NULL
++};
+ const char *node_fields_math_text_char[] = { "attr", "fam", "char", NULL };
+ const char *node_fields_delim[] =
+-    { "attr", "small_fam", "small_char", "large_fam", "large_char", NULL };
++    { "attr", "small_fam", "small_char", "large_fam", "large_char", "class", NULL };
+ 
+ const char *node_fields_inserting[] =
+     { "height", "last_ins_ptr", "best_ins_ptr", NULL };
+@@ -260,10 +263,11 @@
+     {delta_node, delta_node_size, NULL, "delta"},
+     {passive_node, passive_node_size, NULL, "passive"},
+     {shape_node, variable_node_size, NULL, "shape"},
++    {math_inner_noad, math_inner_noad_size, node_fields_math_inner, "math_inner"},
+     {-1, -1, NULL, NULL}
+ };
+ 
+-#define last_normal_node shape_node
++#define last_normal_node math_inner_noad
+ 
+ node_info whatsit_node_data[] = {
+     {open_node, open_node_size, node_fields_whatsit_open, "open"},
+@@ -395,6 +399,9 @@
+         (void) memset((void *) (varmem + n + 1), 0,
+                       (sizeof(memory_word) * ((unsigned) j - 1)));
+         break;
++    case delim_node:
++      delimiter_class(n) = inner_noad_type;
++      break;
+     default:
+         break;
+     }
+Index: source/texk/web2c/luatexdir/tex/texmath.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/texmath.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/texmath.w	(working copy)
+@@ -395,6 +395,15 @@
+     return p;
+ }
+ 
++pointer new_inner_noad(noad_types left_class, noad_types right_class);
++
++pointer new_inner_noad(const noad_types left_class, const noad_types right_class) {
++  const pointer p = new_node(math_inner_noad, 0);
++  math_inner_noad_left_class(p) = left_class;
++  math_inner_noad_right_class(p) = right_class;
++  return p;
++}
++
+ @ @c
+ pointer new_sub_box(pointer cur_box)
+ {
+@@ -553,6 +562,7 @@
+     case simple_noad:
+     case radical_noad:
+     case accent_noad:
++    case math_inner_noad:
+         display_normal_noad(p);
+         break;
+     case fence_noad:
+@@ -585,7 +595,12 @@
+     int a;
+     if (small_fam(p) < 0) {
+         print_int(-1);          /* this should never happen */
+-    } else if (small_fam(p) < 16 && large_fam(p) < 16 &&
++    } else {
++      const noad_types class = delimiter_class(p);
++      if (class != inner_noad_type) {
++        display_simple_noad(class);
++      }
++      if (small_fam(p) < 16 && large_fam(p) < 16 &&
+                small_char(p) < 256 && large_char(p) < 256) {
+         /* traditional tex style */
+         a = small_fam(p) * 256 + small_char(p);
+@@ -602,6 +617,7 @@
+         print_hex(a);
+         a = large_fam(p) * 65536 + large_char(p);
+         print_hex(a);
++      }
+     }
+ }
+ 
+@@ -646,12 +662,10 @@
+     }
+ }
+ 
+-@ @c
+-void display_normal_noad(pointer p)
+-{
+-    switch (type(p)) {
+-    case simple_noad:
+-        switch (subtype(p)) {
++void display_simple_noad(node_types class);
++
++void display_simple_noad(const node_types class) {
++        switch (class) {
+         case ord_noad_type:
+             tprint_esc("mathord");
+             break;
+@@ -659,9 +673,9 @@
+         case op_noad_type_limits:
+         case op_noad_type_no_limits:
+             tprint_esc("mathop");
+-            if (subtype(p) == op_noad_type_limits)
++            if (class == op_noad_type_limits)
+                 tprint_esc("limits");
+-            else if (subtype(p) == op_noad_type_no_limits)
++            else if (class == op_noad_type_no_limits)
+                 tprint_esc("nolimits");
+             break;
+         case bin_noad_type:
+@@ -695,6 +709,14 @@
+             tprint("<unknown noad type!>");
+             break;
+         }
++}
++
++@ @c
++void display_normal_noad(pointer p)
++{
++    switch (type(p)) {
++    case simple_noad:
++      display_simple_noad(subtype(p));
+         break;
+     case radical_noad:
+         if (subtype(p) == 7)
+@@ -771,6 +793,10 @@
+         break;
+        }
+        break;
++    case math_inner_noad:
++      tprint_esc("mathinner");
++      display_simple_noad(math_inner_noad_left_class(p));
++      display_simple_noad(math_inner_noad_right_class(p));
+     }
+     print_subsidiary_data(nucleus(p), '.');
+     print_subsidiary_data(supscr(p), '^');
+@@ -1476,6 +1502,7 @@
+ static void scan_delimiter(pointer p, int r)
+ {
+     delcodeval dval = { 0, 0, 0, 0, 0, 0 };
++    noad_types spacing_class = inner_noad_type;
+     if (r == tex_mathcode) {    /* \.{\\radical} */
+         dval = do_scan_extdef_del_code(tex_mathcode, true);
+     } else if (r == aleph_mathcode) {   /* \.{\\oradical} */
+@@ -1484,6 +1511,10 @@
+         dval = do_scan_extdef_del_code(xetex_mathcode, false);
+     } else if (r == no_mathcode) {
+         get_next_nb_nr();
++        if (cur_cmd == math_comp_cmd) {
++          spacing_class = cur_chr;
++          get_x_token();
++        }
+         switch (cur_cmd) {
+         case letter_cmd:
+         case other_char_cmd:
+@@ -1519,11 +1550,13 @@
+             NULL
+         };
+         back_error("Missing delimiter (. inserted)", hlp);
++        delimiter_class(p) = inner_noad_type;
+         small_fam(p) = 0;
+         small_char(p) = 0;
+         large_fam(p) = 0;
+         large_char(p) = 0;
+     } else {
++      delimiter_class(p) = spacing_class;
+         small_fam(p) = dval.small_family_value;
+         small_char(p) = dval.small_character_value;
+         large_fam(p) = dval.large_family_value;
+@@ -1968,8 +2001,14 @@
+             tail = p;
+             delim_ptr = p;
+         } else {
++          const noad_types left_class = delimiter_class(delimiter(q));
++          const noad_types right_class = delimiter_class(delimiter(p));
++          if (left_class == inner_noad_type && right_class == inner_noad_type) {
+             tail_append(new_noad());
+             subtype(tail) = inner_noad_type;
++          } else {
++            tail_append(new_inner_noad(left_class, right_class));
++          }
+             r = new_node(sub_mlist_node, 0);
+             nucleus(tail) = r;
+             math_list(nucleus(tail)) = q;
+Index: source/texk/web2c/luatexdir/tex/mlist.w
+===================================================================
+--- source/texk/web2c/luatexdir/tex/mlist.w	(revision 4047)
++++ source/texk/web2c/luatexdir/tex/mlist.w	(working copy)
+@@ -3529,6 +3529,8 @@
+             math_kern(q, cur_mu);
+             goto DONE_WITH_NODE;
+             break;
++        case math_inner_noad:
++          break;
+         default:
+             confusion("mlist1");        /* this can't happen mlist1 */
+         }
+@@ -3657,12 +3659,18 @@
+             vlink(p) = null;
+             goto NEXT_NODE;
+             break;
++        case math_inner_noad:
++          t = simple_noad;
++          t_subtype = inner_noad_type;
++          break;
+         default:
+             confusion("mlist3");        /* this can't happen mlist3 */
+         }
+         /* Append inter-element spacing based on |r_type| and |t| */
+         if (r_type > 0) {       /* not the first noad */
+-            z = math_spacing_glue(r_subtype, t_subtype, cur_style, cur_mu);
++          const noad_types left_spacing = type(r) == math_inner_noad ? math_inner_noad_right_class(r) : r_subtype;
++          const noad_types right_spacing = type(q) == math_inner_noad ? math_inner_noad_left_class(q) : t_subtype;
++            z = math_spacing_glue(left_spacing, right_spacing, cur_style, cur_mu);
+             if (z != null) {
+                 reset_attributes(z, node_attr(p));
+                 vlink(p) = z;
