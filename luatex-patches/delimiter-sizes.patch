@@ -1,6 +1,6 @@
 Index: source/texk/web2c/luatexdir/tex/mlist.w
 ===================================================================
---- source/texk/web2c/luatexdir/tex/mlist.w	(revision 4094)
+--- source/texk/web2c/luatexdir/tex/mlist.w	(revision 4095)
 +++ source/texk/web2c/luatexdir/tex/mlist.w	(working copy)
 @@ -309,7 +309,7 @@
  #define fraction_denom_vgap(a)   get_math_param_or_error(a, fraction_denom_vgap)
@@ -11,24 +11,53 @@ Index: source/texk/web2c/luatexdir/tex/mlist.w
  
  #define limit_above_vgap(a)      get_math_param_or_error(a, limit_above_vgap)
  #define limit_above_bgap(a)      get_math_param_or_error(a, limit_above_bgap)
-@@ -2388,6 +2388,20 @@
+@@ -2313,6 +2313,19 @@
+     }
+ }
+ 
++static scaled get_delimiter_height(scaled depth, scaled height) {
++    scaled delta, delta1, delta2;       /* dimensions used in the calculation */
++    delta2 = depth + math_axis(cur_size);
++    delta1 = height + depth - delta2;
++    if (delta2 > delta1)
++        delta1 = delta2;        /* |delta1| is max distance from axis */
++    delta = (delta1 / 500) * delimiter_factor;
++    delta2 = delta1 + delta1 - delimiter_shortfall;
++    if (delta < delta2)
++        delta = delta2;
++    return delta;
++}
++
+ @ The |make_fraction| procedure is a bit different because it sets
+ |new_hlist(q)| directly rather than making a sub-box.
+ 
+@@ -2388,6 +2401,9 @@
      /* Put the fraction into a box with its delimiters, and make |new_hlist(q)|
         point to it */
      delta = fraction_del_size(cur_style);
 +    if (delta == undefined_math_parameter) {
-+      /* TODO: factor out this calculation in a common function */
-+      scaled delta1, delta2;       /* dimensions used in the calculation */
-+      scaled max_hv = height(v);
-+      scaled max_d = depth(v);
-+      delta2 = max_d + math_axis(cur_size);
-+      delta1 = max_hv + max_d - delta2;
-+      if (delta2 > delta1)
-+          delta1 = delta2;        /* |delta1| is max distance from axis */
-+      delta = (delta1 / 500) * delimiter_factor;
-+      delta2 = delta1 + delta1 - delimiter_shortfall;
-+      if (delta < delta2)
-+          delta = delta2;
++        delta = get_delimiter_height(depth(v), height(v));
 +    }
      x = var_delimiter(left_delimiter(q), cur_size, delta, NULL, cur_style);
      left_delimiter(q) = null;
      vlink(x) = v;
+@@ -3048,17 +3064,10 @@
+ static small_number make_left_right(pointer q, int style, scaled max_d,
+                                     scaled max_hv)
+ {
+-    scaled delta, delta1, delta2;       /* dimensions used in the calculation */
++    scaled delta;
+     pointer tmp;
+     setup_cur_size(style);
+-    delta2 = max_d + math_axis(cur_size);
+-    delta1 = max_hv + max_d - delta2;
+-    if (delta2 > delta1)
+-        delta1 = delta2;        /* |delta1| is max distance from axis */
+-    delta = (delta1 / 500) * delimiter_factor;
+-    delta2 = delta1 + delta1 - delimiter_shortfall;
+-    if (delta < delta2)
+-        delta = delta2;
++    delta = get_delimiter_height(max_d, max_hv);
+     tmp = var_delimiter(delimiter(q), cur_size, delta, NULL, style);
+     delimiter(q) = null;
+     assign_new_hlist(q, tmp);
